@@ -24,6 +24,11 @@ Selecting objects:
 - [getObjectSelection](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simGetObjectSelection.htm)
 - [addObjectToSelection](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simAddObjectToSelection.htm)
 
+Timing:
+
+- [Get simulation time step](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simGetSimulationTimeStep.htm)
+- [get simulation time](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simGetSimulationTime.htm)
+
 ## First version -- just for understanding
 
 first version: *object_to_copy* is a simple cube, the object we want t copy; *spawner* the point where to spawn the copy.
@@ -92,3 +97,5 @@ end
 ```
 
 **result**: the copy, with tag *new_copy*, is located at the position of the *spawner* dummy, and the original object stays in the same position. The expected behaviour. 
+
+**Note well**: the copy and paste here doesn't copy the entire model, but only one element. See the options of copy and paste for more details. 
