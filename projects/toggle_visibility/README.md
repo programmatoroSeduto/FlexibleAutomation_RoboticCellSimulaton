@@ -1,4 +1,4 @@
-# LUA snippents -- Shapes Visibility
+# LUA snippets -- Shapes Visibility
 
 ## Tools of the trade
 
