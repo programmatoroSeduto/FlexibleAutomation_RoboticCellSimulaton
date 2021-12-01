@@ -28,7 +28,6 @@ Tools:
 
 - [sim.setVisionSensorCharImage](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simSetVisionSensorCharImage.htm)
 - [sim.getVisionSensorCharImage](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simGetVisionSensorCharImage.htm)
-- []()
 
 ## Before starting - an overview on Vision Sensors in CoppeliaSim
 
@@ -76,6 +75,8 @@ function sysCall_actuation()
     -- transfer the image from the fist cam to the second one
     if image ~= nil then
         sim.setVisionSensorCharImage( cam_to, image )
+		-- also this works fine (but don't mix the approaches)
+		-- sim.setVisionSensorImage( cam_to, image )
     end
 end
 
@@ -83,6 +84,8 @@ function sysCall_sensing()
     -- take the image from the 'from' camera
     image = nil
     image = sim.getVisionSensorCharImage( cam_from )
+	-- also this works fine (but don't mix the approaches)
+	-- image = sim.getVisionSensorImage( cam_from )
 end
 
 function sysCall_cleanup()
@@ -158,3 +161,4 @@ function sysCall_cleanup()
     sim.resetVisionSensor( screen )
 end
 ```
+
