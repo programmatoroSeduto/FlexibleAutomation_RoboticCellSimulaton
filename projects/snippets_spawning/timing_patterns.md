@@ -141,4 +141,4 @@ function check_time( )
 end
 ```
 
-This approach could have a cons to take into account: in some cases, *overflow* could happen. Except for this, 
+This approach could have a cons to take into account: in some cases, *overflow* could happen. Except for this, the approach is lighter than the timer pattern in terms of computation: in fact the update step disappears here, the function just does setup and checking. 
