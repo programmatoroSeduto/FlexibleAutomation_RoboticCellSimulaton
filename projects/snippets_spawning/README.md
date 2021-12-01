@@ -165,3 +165,90 @@ end
 See the example attached here. 
 
 **Note well**: the position of the spawner is extracten only one time at the init phase. If the spawn dumm would move, the object to copy keeps falling at the same initial position each time a new object is spawned. 
+
+## Fourth version -- model spawning
+
+See example *spawn_model_esample.ttt*, which was modified in order to support the copy of not only the cube, but also the entire sub-tree, "main object" included.  Here are the updates:
+
+```lua
+-- (1) select the original copy of the object to spawn
+--> BEFORE: the option 'sim.handle_single' selects only the pointed object
+-- sim.addObjectToSelection( sim.handle_single, to_copy_d )
+
+--> AFTER: the option 'sim.handle_tree' allows to select both the object and
+--    the entire subtree under that. 
+sim.addObjectToSelection( sim.handle_tree, to_copy )
+
+
+-- (3) copy and paste, rename the copy, adn increment the spawn index
+--> UPDATE: just give the correct name also to the dummy under the main object to spawn
+sim.copyPasteObjects( sim.getObjectSelection( ), 2, 0 )
+local copy = sim.getObjectHandle( "object_to_copy" .. 0 )
+sim.setObjectName( copy, "new_copy_" .. spawn_idx )
+local copy_child = sim.getObjectChild( copy, 0 )
+sim.setObjectName( copy_child, "dummy_to_copy_" .. spawn_idx )
+spawn_idx = spawn_idx + 1
+```
+
+And below is the complete code in the example. Nothing changes except for  the function `spawn_execute( )`. 
+
+```lua
+-- Spawning method
+function spawn_execute( )
+    local to_copy      = sim.getObjectHandle( "object_to_copy" )
+    local to_copy_pos  = sim.getObjectPosition( to_copy, -1 )
+    
+    sim.removeObjectFromSelection( sim.handle_all )
+    
+    -- (1) select the original copy of the object to spawn
+    sim.addObjectToSelection( sim.handle_tree, to_copy )
+    -- sim.addObjectToSelection( sim.handle_single, to_copy_d )
+    
+    -- (2) move it to the new position
+    sim.setObjectPosition( to_copy, -1, spawn_point )
+    
+    -- (3) copy and paste, rename the copy, adn increment the spawn index
+    sim.copyPasteObjects( sim.getObjectSelection( ), 2, 0 )
+    local copy = sim.getObjectHandle( "object_to_copy" .. 0 )
+    sim.setObjectName( copy, "new_copy_" .. spawn_idx )
+    local copy_child = sim.getObjectChild( copy, 0 )
+    sim.setObjectName( copy_child, "dummy_to_copy_" .. spawn_idx )
+    spawn_idx = spawn_idx + 1
+    
+    -- (4) restore the position of the original copy
+    sim.setObjectPosition( to_copy, -1, to_copy_pos )
+    
+    sim.removeObjectFromSelection( sim.handle_all )
+end
+
+-- child script with 'spawner'
+function sysCall_init()
+    -- setup timer
+    remaining_time  = 0   -- remanining time to the next spawn
+    delta_time      = 2   -- one spawn every 2 seconds
+    prev_time       = sim.getSimulationTime( )
+    
+    -- setup spawning
+    spawn_dummy     = sim.getObjectHandle( "spawner" )
+    spawn_point     = sim.getObjectPosition( spawn_dummy, -1 )
+    spawn_idx       = 0
+end
+
+-- spawning with dynamic step
+function sysCall_actuation( )
+    if remaining_time <= 0 then
+        -- spawning
+        spawn_execute( )
+		
+		-- then reset the timer
+        remaining_time = delta_time
+        
+    else
+        -- keep going
+        local simulation_step = sim.getSimulationTime( ) - prev_time
+        remaining_time = remaining_time - simulation_step
+        prev_time =sim.getSimulationTime( )
+        
+    end
+end
+```
