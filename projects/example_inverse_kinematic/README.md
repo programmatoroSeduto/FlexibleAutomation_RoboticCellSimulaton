@@ -24,7 +24,8 @@ Checkings you should do before the implementation of the IK on code:
 
 - all the joints in the kinematic chain must be with the flags *motor enabled* and *control loop enabled*; check the dynamic properties of the joints
 - the TARGET must be linked to the TIP
-- BASE, TIP and OBJECT aren't necessarily dummies: they can be every shape/mesh you want. 
+- BASE, TIP and OBJECT aren't necessarily dummies: they can be every shape/mesh you want
+- BASE must be **model base AND the root of the kinematic chain**, see the *init issue* below in this document
 
 ## Simple Implementation
 
@@ -120,3 +121,8 @@ See the example *example_issue*. An issue could happen in calling the function `
 The instruction `local rs = simIK.addIkElementFromScene( IK_ENV, IK_GROUP, BASE, TIP, TARGET, simIK.constraint_pose )` causes this *unclear* issue: in fact, all the handlers in the example are valid, so there's no reason for this message. 
 
 The error lies in the line `BASE = sim.getObjectHandle( "base" )`: for some reason, CoppeliaSim refuses this kinematic chain, making the instruction `simIK.addIkElementFromScene()` to fail. Changing that line with `BASE = sim.getObjectHandle( "suction_picker" )` (the dummy before the first piece of the kinematic chain) everything works as expected. 
+
+Here is the reson why CoppeliaSim refuses that kinematic chain:
+
+> **the base object MUST BE MODEL BASE**
+
