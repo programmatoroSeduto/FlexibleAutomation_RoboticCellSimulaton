@@ -67,17 +67,31 @@ sim.setLinkDummy( l, -1 ) --> '-1' that is 'no father'
 sim.setObjectParent( l, b, true )
 
 -- make the poses of the two dummies to coincide
-m=sim.getObjectMatrix( l2, -1 )
+m = sim.getObjectMatrix( l2, -1 )
 sim.setObjectMatrix( l, -1, m )
 ```
 
-**Forced release**. Note that, inside the code, the parent of the first dummy is checked compared to the state. In other words, if the suction pad is not in state *enabled* (i.e. it grasped something previously), the parent of the first dummy must be the root of the suction pad hierarchy. Otherwise, the state is *inconsistent*, so the code restores the state to *not enabled*. The code executed in this situation is always the same:
+**Forced release**. Here is a snippet that works fine with this type of gripper:
 
 ```lua
-sim.setLinkDummy( l, -1 )
-sim.setObjectParent( l, b, true )
-m=sim.getObjectMatrix( l2, -1 )
-sim.setObjectMatrix( l, -1, m )
+-- before starting, you need the handlers!
+suction_root = sim.getObjectHandle( "suctionPad" )
+suction_link = sim.getObjectHandle( "suctionPadLoopClosureDummy1" )
+suction_dummy2 = sim.getObjectHandle( "suctionPadLoopClosureDummy2" )
+
+-- remove link (the object will fall down immediately)
+sim.setLinkDummy( suction_link, -1, true )
+-- restore the gripper
+sim.setObjectParent( suction_link, suction_root, true )
+sim.setObjectMatrix( l, -1, sim.getObjectMatrix( suction_dummy2, -1 ) )
 ```
 
-So, to let the object to fall down, it is sufficient to *break the link*: the code will perform all the other steps. Find teh dummy of the gripper (let's say, `dummy`), then make it unlinked by calling `sim.setLinkDummy( dummy, -1 )`. 
+## A console example
+
+```lua
+tg = sim.getObjectHandle( "target" )
+tg_pos = sim.getObjectPose( tg, -1 )
+obj = sim.getObjectHandle( "Cylinder1" )
+obj_pos = sim.getObjectPose( obj, -1 )
+sim.setObjectPose( tg, -1, obj_pos )
+```
