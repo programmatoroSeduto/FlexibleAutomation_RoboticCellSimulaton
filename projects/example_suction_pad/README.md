@@ -74,7 +74,7 @@ sim.setObjectMatrix( l, -1, m )
 **Forced release**. Here is a snippet that works fine with this type of gripper:
 
 ```lua
--- before starting, you need the handlers!
+-- BEFORE STARTING, you need the handlers!
 suction_root = sim.getObjectHandle( "suctionPad" )
 suction_link = sim.getObjectHandle( "suctionPadLoopClosureDummy1" )
 suction_dummy2 = sim.getObjectHandle( "suctionPadLoopClosureDummy2" )
@@ -84,14 +84,4 @@ sim.setLinkDummy( suction_link, -1, true )
 -- restore the gripper
 sim.setObjectParent( suction_link, suction_root, true )
 sim.setObjectMatrix( l, -1, sim.getObjectMatrix( suction_dummy2, -1 ) )
-```
-
-## A console example
-
-```lua
-tg = sim.getObjectHandle( "target" )
-tg_pos = sim.getObjectPose( tg, -1 )
-obj = sim.getObjectHandle( "Cylinder1" )
-obj_pos = sim.getObjectPose( obj, -1 )
-sim.setObjectPose( tg, -1, obj_pos )
 ```
