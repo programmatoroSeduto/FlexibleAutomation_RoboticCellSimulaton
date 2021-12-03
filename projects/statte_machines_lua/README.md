@@ -165,43 +165,41 @@ For adding states to the machine, you can use simply the method `.add_state( sel
 Here is a very common example:
 
 ```lua
-function sysCall_init()
-    -- create an empty state machine
-    smach = smach_init( )
-    
-    -- define the states
-    --    just for example: two states
-    smach.add_state( smach, 
-        "state_0", 
-        function( self, pack )
-            print( "from " .. pack["state_0_name"] .. " to " .. pack["state_1_name"] )
-            return  "state_1"
-        end,
-        true
-    )
-    smach.add_state( smach, 
-        "state_1",
-        function( self, pack )
-            print( "from " .. pack["state_1_name"] .. " to " .. pack["state_0_name"] )
-            return "state_0"
-        end,
-        false
-    )
-    
-    -- set the package
-    pack = { 
-        ["state_0_name"] = "oibo-boi",
-        ["state_1_name"] = "ciaccia"
-    }
-    smach.set_shared( smach, pack )
-end
+-- create an empty state machine
+smach = smach_init( )
+
+-- define the states
+--    just for example: two states
+smach.add_state( smach, 
+	"state_0", 
+	function( self, pack )
+		print( "from 0 to 1" )
+		return  "state_1"
+	end,
+	true
+)
+smach.add_state( smach, 
+	"state_1",
+	function( self, pack )
+		print( "from 1 to 0" )
+		return "state_0"
+	end,
+	false
+)
 ```
 
 ### Shared data
 
 Using global variales could be a poor solution in many situations. So, this implementation allows the states to have a *shared storage* that you can initialize using `.set_shared( self, pack )` or reassign using `.exec( self, pack )`. Every time you call one of these functions, the "pack" is copied inside the state machine class, so each state can share memory instead of working with a copy.
 
-See the example above in the *Adding States* section.
+```lua
+-- set the package
+local pack = { 
+	["state_0_name"] = "oibo-boi",
+	["state_1_name"] = "ciaccia"
+}
+smach.set_shared( smach, pack )
+```
 
 ### Execute the machine
 
