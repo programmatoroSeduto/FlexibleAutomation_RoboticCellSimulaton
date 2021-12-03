@@ -17,9 +17,8 @@ Note that the variables starting with double underscore are to be considered as 
 The following function `smach_init( )` returns an empty state machine. 
 
 ```lua
--- Create an empty state machine
 function smach_init( )
-    local sm = {}
+    local sm = { }
 
     -- transition function
     sm.__transition_function = { }
@@ -38,13 +37,15 @@ function smach_init( )
         arguments: 
             1. a single package with everythin needed to run the state
             2. the state machine itself
-        returns: the label of the next state
+        returns: the label of the next state, or nothing
+            when nothing is returned, the machine doesn't update its state
     --]]
 
     -- how many states are in the state machine
     sm.__state_count = 0
     -- actual state (-1 if there's not a initial state)
     sm.state = -1
+    sm.state_name = nil
     
     -- initial state (-1 if not set)
     sm.init_state = -1
@@ -54,7 +55,7 @@ function smach_init( )
     
     -- MEMBER: add a new state to the machine
     -- ARGS: self, label, function, is_init?
-    -- RETURNS: success (true) or not (false)
+    -- RETURNS: success (true) or not (false) and the state (-1 if result is false)
     --    if the machine is empty, set the new state as initial 
     function sm.add_state( 
         self,          -- the state machine
@@ -87,6 +88,7 @@ function smach_init( )
         if self.init_state < 0 or is_init then
             self.init_state = state_idx 
             self.state = state_idx
+            self.state_name = state_label
         end
     end
     
@@ -96,7 +98,7 @@ function smach_init( )
         -- check if the machine has at least one state
         if self.init_state < 0 then
             print( "[State Machine:exec] ERROR: State machine not yet initialized!" )
-            return false
+            return false, nil, nil
         end
         
         -- get the state record
@@ -114,16 +116,14 @@ function smach_init( )
         
         -- compute the next state if possible
         local state_next_idx = self.__transition_function[ state_next_str ]
-        if state_next_idx == nil then
-            print( "[State Machine:exec] ERROR: state action of '" .. 
-                state_record["state_label"] .. "' returned an unexistent state!")
-            return false
-        end
         
         -- update the state of the machine
-        self.state = state_next_idx
+        if state_next_idx ~= nil then
+            self.state = state_next_idx
+            self.state_name = state_record["state_name"]
+        end
         
-        return true --> success
+        return true, self.state, self.state_name  --> success
     end
     
     -- MEMBER: set/reset shared infos
@@ -215,7 +215,7 @@ function sysCall_actuation()
 end
 ```
 
-### A complete example with two states
+## A complete example -- FSM with two states
 
 See the example *state_code*. In this example, the state changes every 2 seconds. The machine is made up of only two states, *state_0* and *state_1*.
 
@@ -423,6 +423,105 @@ function sysCall_actuation()
 end
 ```
 
+## A more advanced example -- FSM and Trajectories
+
+See the example *smach_trajectories*, which combines the trajectory framework with the state machine. Here is the main part of the code, which uses the scripts presented before:
+
+```lua
+function setup_smach( )
+    local machine = smach_init( )
+    
+    -- shared infos
+    local shared_info = {
+        handlers = point_set,
+        sequence_idx = 1,
+        path_h = nil,
+        ptr = pointer,
+        end_job = false,
+        velocity = 1,
+    }
+    machine.set_shared( machine, shared_info )
+    
+    -- state: INIT
+    machine.add_state( machine,
+        "INIT",
+        function( self, pack )
+            print( "state: INIT" )
+            
+            return "update_path"
+        end, 
+        true
+    )
+    
+    -- state: update target
+    machine.add_state( machine,
+        "update_path",
+        function( self, pack )
+            print(  "state: UPDATE_PATH" )
+            
+            -- end of the cycle
+            if pack.sequence_idx > #pack.handlers then
+                return "END"
+            end
+            
+            -- change path
+            pack.path_h = path_switch( 
+                pack.handlers[pack.sequence_idx], 
+                pack.path_h,
+                pack.ptr
+            )
+            pack.sequence_idx = pack.sequence_idx + 1
+            
+            print(  "state: GO_TO_POINT" )
+            return "go_to_point"
+        end
+    )
+    
+    -- state: go to point
+    machine.add_state( machine,
+        "go_to_point",
+        function( self, pack )
+            if path_move( pack.path_h, pack.velocity ) then
+                return "update_path"
+            else
+                return "go_to_point"
+            end
+        end
+    )
+    
+    -- state: END
+    machine.add_state( machine,
+        "END",
+        function( self, pack )
+            print( "state: END" )
+            pack.sequence_idx = 1
+            return "INIT"
+        end
+    )
+    
+    return machine
+end
+
+
+function sysCall_init( )
+    -- elements from the scene: pointer...
+    pointer = sim.getObjectHandle( "point_to_move" )
+    -- ...and destinations
+    point_set = {}
+    for i=1,4,1 do
+        point_set[i] = sim.getObjectHandle( "pose_" .. i )
+    end
+    
+    sm = setup_smach( )
+    print( sm )
+end
+
+
+function sysCall_actuation( )
+    sm.exec( sm )
+end
+```
+
 # Some console examples
 
 ```lua
@@ -483,5 +582,27 @@ DEFINITION CHECKING INSIDE A TABLE
 "nil"
 > type( tab[3] )
 "nil"
+
+RETURN MULTIVALUE
+-- not the correct syntax
+> function multi_return( a, b ) 
+        return { a, b } 
+    end 
+    c, d = multi_return( 1, 2 )
+> c
+{1, 2}
+> b
+nil
+> d
+nil
+-- the correct one
+> function multi_return( a, b ) 
+        return a, b 
+    end 
+    c, d = multi_return( 1, 2 )
+> c
+1
+> d
+2
 --]]
 ```
