@@ -111,4 +111,3 @@ Inside this folder there are also other interesting scripts. By the way, this fo
 
 - [What is a customization script?](https://www.coppeliarobotics.com/helpFiles/en/customizationScripts.htm)
 - Meaning of the word **sim.Handle_self**, see [here, section LUA parameters](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simGetObjectHandle.htm)
-- 
