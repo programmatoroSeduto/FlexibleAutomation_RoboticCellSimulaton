@@ -7,6 +7,7 @@ See these links:
 - [sim.getScriptAssociatedWithObject](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simGetScriptAssociatedWithObject.htm)
 - [sim.callScriptFunction](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simCallScriptFunction.htm)
 - for further infos, see also the [regular API](https://www.coppeliarobotics.com/helpFiles/en/apiFunctions.htm) section *Scripts*
+- [Messaging/interfaces/connectivity](https://www.coppeliarobotics.com/helpFiles/en/meansOfCommunication.htm)
 
 Just a simple example. Let's suppose that you want to call the function `my_function( )` which is contained in a *child script* (in CoppeliaSim, `sim.scripttype_childscript`) belonging to an object named `my_object` (which is also the default name of the script) with no arguments. 
 
@@ -55,3 +56,17 @@ The advantage of this patters is that the settings of a scene are collected in o
 - you can only read and copy infos. Of course you can rebuild the structure re-calling the function, but the object will remain a copy and not something really shared. 
 - settings cannot be shared by different scenes: if you have two or more scenes with the same settings, you should copy and paste, which is clearly a very poor solution. The best is to create an external script
 
+## Script Communication using Custom Data Blocks
+
+A *custom data block* is a shared table among the scripts. These fields are associated to an object into the scene, and represents the "public interface" of the object. 
+
+```lua
+--- WRITE
+-- define / rewrite a shared variable
+sim.writeCustomDataBlock( obj_handle, "var_name", "var_value" )
+-- ES:
+sim.writeCustomDataBlock( pack.suction_root, "enabled", "false" )
+
+--- READ
+sim.readCustomDataBlock( obj_handle, "var_name" )
+```

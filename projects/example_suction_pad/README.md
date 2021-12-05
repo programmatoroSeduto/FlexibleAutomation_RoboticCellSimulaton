@@ -85,3 +85,30 @@ sim.setLinkDummy( suction_link, -1, true )
 sim.setObjectParent( suction_link, suction_root, true )
 sim.setObjectMatrix( l, -1, sim.getObjectMatrix( suction_dummy2, -1 ) )
 ```
+
+**simple way**. This way is the most intuitive, but requires a little improvement of the default code of the suction pad. Insert this code inside the `sysCall_init( )` function:
+
+```lua
+sim.writeCustomDataBlock( b, "enabled", "true" )
+```
+
+Then, write copy and paste it into the `sysCallA_actuation( )` function:
+
+```lua
+local enabled_val = sim.readCustomDataBlock( b, "enabled" )
+if enabled_val == "true" then
+	enabled = true
+else
+	enabled = false
+end
+```
+
+With this simple code, it is possible to grasp/ungrasp objects simply modifying the value of the shared variable `enabled` exposed by the root of the suction pad object. 
+
+```lua
+-- ungrasp
+sim.writeCustomDataBlock( pack.suction_root, "enabled", "false" )
+
+-- grasp
+sim.writeCustomDataBlock( pack.suction_root, "enabled", "true" )
+```
