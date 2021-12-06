@@ -28,6 +28,13 @@ Tools:
 
 - [sim.setVisionSensorCharImage](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simSetVisionSensorCharImage.htm)
 - [sim.getVisionSensorCharImage](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simGetVisionSensorCharImage.htm)
+- [sim.getVisionSensorImage](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simGetVisionSensorImage.htm)
+- [sim.setVisionSensorImage](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simSetVisionSensorImage.htm)
+
+See also:
+
+- About [tables in LUA (reference)](https://www.tutorialspoint.com/lua/lua_tables.htm)
+- [StackOverflow - LUA and equality being using tables](https://stackoverflow.com/questions/20325332/how-to-check-if-two-tablesobjects-have-the-same-value-in-lua)
 
 ## Before starting - an overview on Vision Sensors in CoppeliaSim
 
@@ -162,3 +169,126 @@ function sysCall_cleanup()
 end
 ```
 
+## Color Detection
+
+See example *color_detection.ttt*: it shows how to use a ortographic sensor for identifying a base color. Before starting, remember to check these points:
+
+- the object you want to detect must be *renderable*
+- the object should have a *specular* color set, as well as an ambient-diffuse color
+
+```lua
+-- get the average color from the sensor
+-- image : one array of dimensions res_x*res_y*3
+--    { r, g, b, r, g, b, r, g, ... }
+--    1,2,3 --> pixel [1][1]
+--    4,5,6 --> pixel [1][2]
+-- RETURNS: { r = avg_r, g = avg_g, b = avg_b }
+-- ARGS: the image, the size as array {x, y}
+function img_get_average_color_rgb( frame, img_res )
+    local avg = {
+        r = 0.0,
+        g = 0.0,
+        b = 0.0
+    }
+    local n_pixels = img_res[1]*img_res[2]
+    
+    -- summation of all the values
+    for i = 1, n_pixels*3, 3 do
+        avg.r = avg.r + frame[i]
+        avg.g = avg.g + frame[i + 1]
+        avg.b = avg.b + frame[i + 2]
+    end
+    
+    -- average values
+    avg.r = math.floor(avg.r / n_pixels + 0.5)
+    avg.g = math.floor(avg.g / n_pixels + 0.5)
+    avg.b = math.floor(avg.b / n_pixels + 0.5)
+    
+    return avg
+end
+
+-- a simple lookup for a maximum (only three colors)
+function detect_color_3( avg )
+    if avg.r > avg.g and avg.r > avg.b then
+        return "RED"
+    elseif avg.g > avg.r and avg.g > avg.b then
+        return "GREEN"
+    else
+        return "BLUE"
+    end
+end
+
+-- check for new colors
+-- RETURNS: if it is a new color, the ID of the color
+-- INPUt: avg color array {r=, g=, b=}
+function detect_new_color( avg )
+    local new_color = false
+    local color_ID = 0
+    
+    -- if the list is empty, the color is for sure new
+    if #color_list == 0 then
+        table.insert( color_list, avg )
+        new_color = true
+        color_ID = 1
+        
+        return new_color, color_ID
+    end
+    
+    -- search for the color
+    local found_color = false
+    for i = 1, #color_list, 1 do
+        local col = color_list[i]
+        if col.r == avg.r and col.b == avg.b and col.g == avg.g then
+            found_color = true
+            color_ID = i
+            break
+        end
+    end
+    
+    if not found_color then 
+        table.insert( color_list, avg )
+        new_color = true
+        color_ID = #color_list
+    end
+    
+    return new_color, color_ID
+end
+
+function sysCall_init()
+    -- vision sensor
+    vision  = sim.getObjectHandle( "color_sensor" )
+    img_resolution = sim.getVisionSensorResolution( vision ) --> {x, y}
+    last_frame = {}
+    avg_color = { r=0.0, g=0.0, b=0.0 }
+    frame_count = 0
+    color_list = {}
+    
+    -- trigger
+    trigger = sim.getObjectHandle( "color_sensor_trigger" )
+    triggered = false
+end
+
+function sysCall_sensing()
+    -- attempt to read the trigger
+    local trigger_state = sim.readProximitySensor( trigger )
+    if trigger_state > 0 and not triggered then
+        triggered = true
+        
+        -- get the image
+        last_frame = sim.getVisionSensorImage( vision )
+        frame_count = frame_count + 1
+        
+        -- compute the average color
+        avg_color = img_get_average_color_rgb( last_frame, img_resolution )
+        local isnewcolor, idcolor = detect_new_color( avg_color )
+        if isnewcolor then
+            print( "detected color TAG --> " .. idcolor .. " (new color found)" )
+        else
+            print( "detected color TAG --> " .. idcolor .. " (not a new color)")
+        end
+        
+    elseif trigger_state < 1 and triggered then
+        triggered = false
+    end
+end
+```

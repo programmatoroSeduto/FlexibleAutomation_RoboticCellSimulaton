@@ -8,6 +8,9 @@ See these links:
 - [sim.callScriptFunction](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simCallScriptFunction.htm)
 - for further infos, see also the [regular API](https://www.coppeliarobotics.com/helpFiles/en/apiFunctions.htm) section *Scripts*
 - [Messaging/interfaces/connectivity](https://www.coppeliarobotics.com/helpFiles/en/meansOfCommunication.htm)
+- [sim.packTable](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simPackTable.htm)
+- [sim.unpackTable](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simUnpackTable.htm)
+- Other *packing* functions [here (API)](https://www.coppeliarobotics.com/helpFiles/en/apiFunctions.htm#packing)
 
 Just a simple example. Let's suppose that you want to call the function `my_function( )` which is contained in a *child script* (in CoppeliaSim, `sim.scripttype_childscript`) belonging to an object named `my_object` (which is also the default name of the script) with no arguments. 
 
