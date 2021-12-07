@@ -11,6 +11,7 @@ See these links:
 - [sim.packTable](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simPackTable.htm)
 - [sim.unpackTable](https://www.coppeliarobotics.com/helpFiles/en/regularApi/simUnpackTable.htm)
 - Other *packing* functions [here (API)](https://www.coppeliarobotics.com/helpFiles/en/apiFunctions.htm#packing)
+- Here is [how to temporany disable error notifications](https://forum.coppeliarobotics.com/viewtopic.php?t=6975)
 
 Just a simple example. Let's suppose that you want to call the function `my_function( )` which is contained in a *child script* (in CoppeliaSim, `sim.scripttype_childscript`) belonging to an object named `my_object` (which is also the default name of the script) with no arguments. 
 
