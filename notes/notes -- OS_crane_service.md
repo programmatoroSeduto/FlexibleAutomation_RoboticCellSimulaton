@@ -10,9 +10,11 @@ crane_service = sim.getObjectHandle( "OS_crane_service" )
 
 Vars:
 
-- (WRITE ONLY) *OS_crane_service_shared_input* - packTable 
-	the message is rewrittenn with the empy message when the service has read it.  
-	commands: *slot, pick_ready, pick, place_ready, place, idle* 
+- (WRITE ONLY) *OS_crane_service_shared_input* - packTable
+
+the message is rewrittenn with the empy message when the service has read it.  
+
+commands: *slot, pick_ready, pick, place_ready, place, idle* 
 
 ```lua
 -- empty input
@@ -23,7 +25,7 @@ sim.writeCustomDataBlock( crane_service, "OS_crane_service_shared_input", sim.pa
 -- if you read this fiels, you'l find the empty message always
 ```
 
-- (READ ONLY) *OS_crane_service_shared_output*
+- (READ ONLY) *OS_crane_service_shared_output* - packTable
 
 ```lua
 -- empty message
@@ -84,8 +86,25 @@ sm_place_ready( ) -- implementation of the command "place_ready" as state machin
 sm_place( ) -- implementation of "place"
 ```
 
+commands. In general you cannot change the running task while it is running. You have to wait for the end of the current task. (TODO: a "break" command)
 
+- cmd="slot" value=number(1,2,3) -- change the working slot. You cannot change it while the system is working 
+- cmd="pick_ready" -- move the gripper over the vendor to pick
+- cmd="pick" -- pick the vendor: move down --> enable the gripper and pick --> move up
+- cmd="place_ready" -- move the gripper CARRYING THE VENDOR over the place point
+- cmd="place" -- place the vendor: move down --> disable the gripper --> delay --> move up
 
+The expected sequence each time:
+
+1. *slot <your working slot>*
+2. *pick_ready*
+3. *pick*
+4. *place_ready* 
+4. *place* 
+
+(TODO: implement the command "idle" -- move the gripper in the idle pos of the working slot)
+(TODO: implement the command "maintenance" -- move the gripper in the maintenance zone)
+(TODO: implement the command "break" -- stop the task; the driver is interruptible right now, but not the service)
 
 
 
