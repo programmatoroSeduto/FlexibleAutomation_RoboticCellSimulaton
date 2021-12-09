@@ -82,23 +82,25 @@ sm_pick_ready( ) -- obtain the state machine of the action "pick_ready"
 sm_pick( ) -- implementation of the command "pick" as state machine
 sm_place_ready( ) -- implementation of the command "place_ready" as state machine
 sm_place( ) -- implementation of "place"
+sm_idle( ) -- go into rest position
 ```
 
 commands. In general you cannot change the running task while it is running. You have to wait for the end of the current task. (TODO: a "break" command)
 
-- cmd="slot" value=number(1,2,3) -- change the working slot. You cannot change it while the system is working 
-- cmd="pick_ready" -- move the gripper over the vendor to pick
-- cmd="pick" -- pick the vendor: move down --> enable the gripper and pick --> move up
-- cmd="place_ready" -- move the gripper CARRYING THE VENDOR over the place point
-- cmd="place" -- place the vendor: move down --> disable the gripper --> delay --> move up
+- cmd=**slot** value=number(1,2,3) -- change the working slot. You cannot change it while the system is working 
+- cmd=**pick_ready** -- move the gripper over the vendor to pick
+- cmd=**pick** -- pick the vendor: move down --> enable the gripper and pick --> move up
+- cmd=**place_ready** -- move the gripper CARRYING THE VENDOR over the place point
+- cmd=**place** -- place the vendor: move down --> disable the gripper --> delay --> move up
 
-The expected sequence each time:
+The expected sequence each time: (cmd, value)
 
-1. *slot <your working slot>*
-2. *pick_ready*
-3. *pick*
-4. *place_ready* 
-4. *place* 
+1. *slot, <your working slot>*
+2. *pick_ready, -1*
+3. *pick, -1*
+4. *place_ready, -1* 
+4. *place, -1* 
+5. *idle, -1*
 
 (TODO: implement the command "idle" -- move the gripper in the idle pos of the working slot)
 

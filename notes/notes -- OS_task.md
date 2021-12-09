@@ -44,3 +44,8 @@ services:
 - stop the slot conveyors before starting
 - enable the carousel before starting
 - the robot is in idle state before starting (go in idle state)
+
+## warnings
+
+- nel caso si comunicasse con un service che fa da intermediario con un driver, potrebbe esserci un frame di ritardo nelle reazioni. Questo non dovrebbe rappresentare un problema ... in ogni caso, stai all'occhio. 
+- 
