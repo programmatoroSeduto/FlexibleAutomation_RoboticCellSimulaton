@@ -1,6 +1,4 @@
-# Interfaces
-
-## OS_crane_service
+# CODING NOTES -- OS_crane_service
 
 Handle to the service:
 
@@ -103,7 +101,9 @@ The expected sequence each time:
 4. *place* 
 
 (TODO: implement the command "idle" -- move the gripper in the idle pos of the working slot)
+
 (TODO: implement the command "maintenance" -- move the gripper in the maintenance zone)
+
 (TODO: implement the command "break" -- stop the task; the driver is interruptible right now, but not the service)
 
 
