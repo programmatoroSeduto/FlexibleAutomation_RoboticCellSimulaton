@@ -1,0 +1,98 @@
+# Interfaces
+
+## OS_crane_service
+
+Handle to the service:
+
+```lua
+crane_service = sim.getObjectHandle( "OS_crane_service" )
+```
+
+Vars:
+
+- (WRITE ONLY) *OS_crane_service_shared_input* - packTable 
+	the message is rewrittenn with the empy message when the service has read it.  
+	commands: *slot, pick_ready, pick, place_ready, place, idle* 
+
+```lua
+-- empty input
+service_empty_input = { cmd="", value=-1 }
+-- send the input
+local msg = { cmd="cmd", value=value }
+sim.writeCustomDataBlock( crane_service, "OS_crane_service_shared_input", sim.packTable( msg ) )
+-- if you read this fiels, you'l find the empty message always
+```
+
+- (READ ONLY) *OS_crane_service_shared_output*
+
+```lua
+-- empty message
+service_empty_output = { success=true, busy=false, erro_code=0, err_str="" }
+-- read the output with
+local msg = sim.unpackTable( sim.readCustomDataBlock( crane_service, "OS_crane_service_shared_output" ) )
+```
+
+Inside the code:
+
+```lua
+-- other handlers
+self -- handle to the service "OS_crane_service"
+pos_idle -- array (ordered by slot) of idle positions
+pos_place -- array of place points (ordered by slot)
+
+-- task error handling
+sm_error_description -- the string description of the error
+
+-- main channels
+service_setup( ) -- setup the service infos
+service_input -- the last input, "consumed" after task selection IN ANY CASE
+service_output -- the last output
+service_update_input( ) -- read the input shared var and update service_input
+service_update_output( ) -- write the content of service_output to the shared space
+
+-- msg models
+service_empty_input = { cmd="", value=-1 }
+service_empty_output = { success=true, busy=false, err_code=0, err_str="" }
+
+-- gripper
+gripper_handle -- the handle of the gripper
+gripper_status - READ ONLY - USE cmd_gripper() INSTEAD! -- (true, false) the status of the gripper
+gripper_payload -- if true, the gripper is carrying something
+cmd_gripper( flag ) -- enable or disable the gripper
+cmd_check_gripper( ) -- check the real status of the gripper
+
+-- crane low level
+crane_driver -- the handle of the crane driver
+cmd_send_position( pos ) -- start the motion of the gripper towards a given pos {x,y,z}
+cmd_get_ee_position( ) -- get the position of the gripper
+cmd_check_driver_status( ) -- the driver can be "idle" or "busy" depending on the motion
+
+-- sensors 
+sensor_slot_driver -- low leve slot sensor
+cmd_check_slot_sensor( ) -- it returns the package containing the state of the slot proximity sensors; used to obtain the pick point
+
+-- task selection and execution
+cur_sm -- the running state machine (default: nil)
+working_slot -- the slot currently handled
+select_cmd( ) -- choose one task (state machine) to execute and return it
+
+-- available tasks 
+-- (they return smach, has_init; if has_init, exeute the first state before starting)
+sm_pick_ready( ) -- obtain the state machine of the action "pick_ready"
+sm_pick( ) -- implementation of the command "pick" as state machine
+sm_place_ready( ) -- implementation of the command "place_ready" as state machine
+sm_place( ) -- implementation of "place"
+```
+
+
+
+
+
+
+
+
+
+
+```lua
+
+```
