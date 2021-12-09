@@ -17,6 +17,7 @@ msg = {
 	slot= , --> the suggested slot
 	pick_point_handle= --> the pick point of the object (deprecated)
 }
+-- empty message : (-1, -1)
 
 -- (READ ONLY)
 -- read the next suggestion
