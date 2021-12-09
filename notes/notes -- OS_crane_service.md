@@ -85,13 +85,14 @@ sm_place( ) -- implementation of "place"
 sm_idle( ) -- go into rest position
 ```
 
-commands. In general you cannot change the running task while it is running. You have to wait for the end of the current task. (TODO: a "break" command)
+commands. In general you cannot change the running task while it is running. You have to wait for the end of the current task. The *cmd* field is interpreted as case-insensitive.
 
 - cmd=**slot** value=number(1,2,3) -- change the working slot. You cannot change it while the system is working 
 - cmd=**pick_ready** -- move the gripper over the vendor to pick
 - cmd=**pick** -- pick the vendor: move down --> enable the gripper and pick --> move up
 - cmd=**place_ready** -- move the gripper CARRYING THE VENDOR over the place point
 - cmd=**place** -- place the vendor: move down --> disable the gripper --> delay --> move up
+- cmd=**idle** -- move the robot in idle position
 
 The expected sequence each time: (cmd, value)
 
@@ -101,8 +102,6 @@ The expected sequence each time: (cmd, value)
 4. *place_ready, -1* 
 4. *place, -1* 
 5. *idle, -1*
-
-(TODO: implement the command "idle" -- move the gripper in the idle pos of the working slot)
 
 (TODO: implement the command "maintenance" -- move the gripper in the maintenance zone)
 

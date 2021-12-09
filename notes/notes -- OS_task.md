@@ -4,13 +4,13 @@
 
 drivers:
 
-- OS_slot_sensor
+- OS_slot_sensor (OK see notes)
 
 services:
 
-- OS_conveyor_service
-- OS_crane_service
-- OS_slot_manager
+- OS_conveyor_service (OK see notes)
+- OS_crane_service (OK see notes)
+- OS_slot_manager (OK see notes)
 
 ## External libs
 
@@ -20,8 +20,8 @@ services:
 
 - self (always present)
 - threshold for slot sensors
-- driver handles
 - service handles
+- driver handles
 
 ## The main idea (before developing the code)
 
@@ -34,7 +34,7 @@ services:
 7. restart the carousel and stop the working conveyor
 8. prepare to place
 9. place the object
-10. go into idle position
+10. go into idle position ONLY IF there's no other suggetions, otherwise go to state 3 after stored the suggestion
 11 restart the conveyor of the working slot
 
 
@@ -49,3 +49,20 @@ services:
 
 - nel caso si comunicasse con un service che fa da intermediario con un driver, potrebbe esserci un frame di ritardo nelle reazioni. Questo non dovrebbe rappresentare un problema ... in ogni caso, stai all'occhio. Diciamo però che se lavorassi "nell'intorno" del punto, allora riuscirei comunque a far funzionare il tutto. 
 - 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```lua
+
+```
