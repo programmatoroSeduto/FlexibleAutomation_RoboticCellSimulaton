@@ -47,5 +47,5 @@ services:
 
 ## warnings
 
-- nel caso si comunicasse con un service che fa da intermediario con un driver, potrebbe esserci un frame di ritardo nelle reazioni. Questo non dovrebbe rappresentare un problema ... in ogni caso, stai all'occhio. 
+- nel caso si comunicasse con un service che fa da intermediario con un driver, potrebbe esserci un frame di ritardo nelle reazioni. Questo non dovrebbe rappresentare un problema ... in ogni caso, stai all'occhio. Diciamo però che se lavorassi "nell'intorno" del punto, allora riuscirei comunque a far funzionare il tutto. 
 - 
