@@ -133,6 +133,7 @@ function distance_between( handleA, handleB )
         (pos_A[2] - pos_B[2])*(pos_A[2] - pos_B[2]) 
         )
 end
+--
 
 --- sensing process
 function sysCall_sensing()
@@ -157,6 +158,7 @@ function sysCall_sensing()
                 -- print( "[sysCall_sensing@OS_slot_sensor] see object named '" .. sim.getObjectName( obj ) .. "'" )
                 shared_data[i].free = true
                 shared_data[i].dist = -1
+                shared_data[i].handle = nil
             else
                 -- "recognize" the pick point
                 shared_data[i].handle = pick_point
@@ -168,6 +170,7 @@ function sysCall_sensing()
             -- nothing inside the sensor
             shared_data[i].free = true
             shared_data[i].dist = -1
+            shared_data[i].handle = nil
         end
     end
     

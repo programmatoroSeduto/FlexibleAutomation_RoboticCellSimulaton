@@ -8,7 +8,7 @@
 
 ```lua
 -- HANDLER
-slot_sensor = sim.getObjectHandle( "OS_slot_sensor" )
+slot_sensor = sim.getObjectHandle( "OS_slot_sensors" )
 
 -- DATA STRUCTURE : READ-ONLY DATA
 -- structure of the shared output message
