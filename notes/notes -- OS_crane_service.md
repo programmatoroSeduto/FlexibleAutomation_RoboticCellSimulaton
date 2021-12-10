@@ -1,5 +1,7 @@
 # CODING NOTES -- OS_crane_service
 
+> Update these notes!
+
 Handle to the service:
 
 ```lua
@@ -21,6 +23,13 @@ service_empty_input = { cmd="", value=-1 }
 local msg = { cmd="cmd", value=value }
 sim.writeCustomDataBlock( crane_service, "OS_crane_service_shared_input", sim.packTable( msg ) )
 -- if you read this fiels, you'l find the empty message always
+
+-- enable slot check for the pick and place (test only)
+sim.writeCustomDataBlock( crane_service, 
+	"OS_crane_service_shared_enable_slot_check", "true" ) --> enable
+sim.writeCustomDataBlock( crane_service, 
+	"OS_crane_service_shared_enable_slot_check", "false" ) --> disable
+-- the var is not rewritten	
 ```
 
 - (READ ONLY) *OS_crane_service_shared_output* - packTable
