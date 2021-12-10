@@ -150,7 +150,7 @@ function smach_init( )
         -- check if the machine has at least one state
         if self.init_state < 0 then
             print( "[State Machine:exec] ERROR: State machine not yet initialized!" )
-            return false, nil, nil
+            return false
         end
         
         -- get the state record
@@ -168,14 +168,17 @@ function smach_init( )
         
         -- compute the next state if possible
         local state_next_idx = self.__transition_function[ state_next_str ]
-        
-        -- update the state of the machine
-        if state_next_idx ~= nil then
-            self.state = state_next_idx
-            self.state_name = state_record["state_name"]
+        if state_next_idx == nil or state_next_str == nil then
+            print( "[State Machine:exec] ERROR: state action of '" .. 
+                state_record["state_label"] .. "' returned an unexistent state!")
+            return false
         end
         
-        return true, self.state, self.state_name  --> success
+        -- update the state of the machine
+        self.state = state_next_idx
+		self.state_name = state_next_str
+        
+        return true --> success
     end
     
     -- MEMBER: set/reset shared infos
@@ -288,6 +291,9 @@ end
 --    as array pos={x,y,z}
 function cmd_send_position( pos )
     -- send the pose
+    -- print( "[cmd_send_position@OS_crane_service] arg: " )
+    -- print( pos )
+    -- sim.pauseSimulation( )
     sim.writeCustomDataBlock( crane_driver, 
         "OS_crane_driver_shared_target", sim.packFloatTable( pos ) )
     -- send the signlal
@@ -306,15 +312,22 @@ end
 --- check the status of the driver
 --   RETURNS 'idle', 'busy'
 function cmd_check_driver_status( )
-    local buf = sim.readCustomDataBlock( crane_driver, "OS_crane_driver_shared" )
-    local msg = sim.unpackTable( buf )
-    buf = sim.readCustomDataBlock( crane_driver, "OS_crane_driver_shared_active" )
-    local active = sim.unpackUInt8Table( buf )[1]
+    local buf1 = sim.readCustomDataBlock( crane_driver, "OS_crane_driver_shared" )
+    local msg = sim.unpackTable( buf1 )
+    local buf2 = sim.readCustomDataBlock( crane_driver, "OS_crane_driver_shared_active" )
+    local active = sim.unpackUInt8Table( buf2 )
     
-    if active and not msg.busy then
-        return "idle"
-    elseif msg.busy then
-        return "busy"
+    -- print( "[cmd_check_driver_status@OS_crane_service] msg from driver: " )
+    -- print( msg )
+    -- print( "[cmd_check_driver_status@OS_crane_service] active msg: " )
+    -- print( active )
+    
+    active = active[1] > 0
+    
+    if msg.busy then
+        return "busy", msg, active
+    else
+        return "idle", msg, active
     end
 end
 --
@@ -688,21 +701,23 @@ end
 --- command 'idle' as state machine
 function sm_idle( )
     local smach = smach_init( )
-    local has_init = true
+    local has_init = false
     
     -- init state
     smach.add_state( smach, "INIT",
         function( self, pack )
-            -- the gripper is not carrying an object
-            if not gripper_status then
-                sm_error_description = "[OS_crane_service] command IDLE state INIT -- ERROR: the gripper is carrying something! Cannot go in rest position. "
-            end
+            print( "[OS_crane_service, idle:INIT]" )
             
             -- get the rest position
-            local idle_point = pos_idle[working_slot]
+            local idle_point = sim.getObjectPosition( pos_idle[working_slot], -1 )
             
             -- send the command to the robot
-            cmd_send_position( pack.idle_point )
+            -- print( "[state_action@OS_crane_service] idle point selected:" )
+            -- print( idle_point )
+            cmd_send_position( idle_point )
+            
+            print( "[OS_crane_service, idle:go_to_point]" )
+            return "go_to_point"
         end,
         true
     )
@@ -710,8 +725,18 @@ function sm_idle( )
     -- reach one given position (flag=true --> downwards path)
     smach.add_state( smach, "go_to_point",
         function( self, pack )
+            local status = ""
+            local msg = {}
+            local active_flag = false
+            status, msg, active_flag = cmd_check_driver_status( )
+            -- print( "[OS_crane_service, idle:go_to_point] " )
+            -- print( "[OS_crane_service, idle:go_to_point] active=" .. tostring(active_flag) )
+            -- print( "[OS_crane_service, idle:go_to_point] status='" .. status .. "'" )
+            -- print( "[OS_crane_service, idle:go_to_point] msg: " )
+            -- print( msg )
             -- simply wait until the manipulator is idle again
-            if cmd_check_driver_status( ) == "busy" then
+            if status == "busy" then
+                -- print( "[state_action@OS_crane_service] driver busy, waiting..." )
                 return "go_to_point"
             else
                 return "END"
@@ -723,6 +748,7 @@ function sm_idle( )
     -- some error occurred
     smach.add_state( smach, "ERR",
         function( self, pack )
+            print( "[OS_crane_service, idle:ERR]" )
             -- an error occurred
             return "ERR"
         end, 
@@ -732,6 +758,7 @@ function sm_idle( )
     -- the machine ended successfully
     smach.add_state( smach, "END",
         function( self, pack )
+            print( "[OS_crane_service, idle:END]" )
             -- all done!
             return "END"
         end, 
@@ -881,7 +908,6 @@ function sysCall_actuation()
             -- ececute the first state
             if cur_sm.exec( cur_sm ) == "ERR" then
                 -- setup failed
-                
                 -- clear the current task
                 cur_sm = nil
                 
@@ -889,20 +915,25 @@ function sysCall_actuation()
                 sm_set_idle_state( false )
                 -- service_output.err_code = sm_error_code
                 service_output.err_str = sm_error_description
-            else
-                -- set the output as busy
-                sm_set_busy( )
             end
         end
+        
+        -- set the output as busy
+        sm_set_busy( )
     end
     
     -- execute the previous command
     if cur_sm ~= nil then
+        -- print( "[sysCall_actuation@OS_crane_service] current state machine: " )
+        -- print( cur_sm )
+        -- print( cur_sm.state_name )
+        
         -- execute the step of the machine
         cur_sm.exec( cur_sm )
         
         -- check the state of the machine
         --    consume the machine if the machine has ended its work
+        -- print( "[sysCall_actuation@OS_crane_service] second state: " .. cur_sm.state_name )
         if cur_sm.state_name == "ERR" then
             sm_set_idle_state( false )
             service_output.err_str = sm_error_description

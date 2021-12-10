@@ -136,7 +136,7 @@ function smach_init( )
         -- check if the machine has at least one state
         if self.init_state < 0 then
             print( "[State Machine:exec] ERROR: State machine not yet initialized!" )
-            return false, nil, nil
+            return false
         end
         
         -- get the state record
@@ -154,14 +154,17 @@ function smach_init( )
         
         -- compute the next state if possible
         local state_next_idx = self.__transition_function[ state_next_str ]
-        
-        -- update the state of the machine
-        if state_next_idx ~= nil then
-            self.state = state_next_idx
-            self.state_name = state_record["state_name"]
+        if state_next_idx == nil or state_next_str == nil then
+            print( "[State Machine:exec] ERROR: state action of '" .. 
+                state_record["state_label"] .. "' returned an unexistent state!")
+            return false
         end
         
-        return true, self.state, self.state_name  --> success
+        -- update the state of the machine
+        self.state = state_next_idx
+		self.state_name = state_next_str
+        
+        return true --> success
     end
     
     -- MEMBER: set/reset shared infos
