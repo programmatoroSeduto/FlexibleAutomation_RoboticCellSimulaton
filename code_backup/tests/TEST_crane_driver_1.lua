@@ -1,10 +1,10 @@
 --[[
-    TEST_crane_driver
+    TEST_crane_driver_1
         a simple echo of the state of the crane
 --]]
 
 function sysCall_init()
-    enabled = true
+    enabled = false
     
     flag = false
     end_echo = false
