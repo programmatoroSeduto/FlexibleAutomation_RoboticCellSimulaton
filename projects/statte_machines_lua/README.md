@@ -340,7 +340,7 @@ function smach_init( )
         
         -- compute the next state if possible
         local state_next_idx = self.__transition_function[ state_next_str ]
-        if state_next_idx == nil then
+        if state_next_idx == nil or state_next_str == nil then
             print( "[State Machine:exec] ERROR: state action of '" .. 
                 state_record["state_label"] .. "' returned an unexistent state!")
             return false
@@ -348,6 +348,7 @@ function smach_init( )
         
         -- update the state of the machine
         self.state = state_next_idx
+		self.state_name = state_next_str
         
         return true --> success
     end
