@@ -248,8 +248,9 @@ function service_update_input( )
     -- read the input
     service_input = sim.unpackTable( sim.readCustomDataBlock( self, 
         "OS_crane_service_shared_input" ) )
-    service_enable_slot_check = ( sim.readCustomDataBlock( self,
-        "OS_crane_service_shared_enable_slot_check" ) == "true" )
+    service_enable_slot_check = sim.readCustomDataBlock( self,
+        "OS_crane_service_shared_enable_slot_check" ) == "true"
+    -- print( "[service_update_input@OS_crane_service] service_enable_slot_check='" .. tostring(service_enable_slot_check) .. "'")
     
     -- clear the cmd input!
     sim.writeCustomDataBlock( self,
@@ -288,7 +289,8 @@ end
 --- check the real status of the gripper
 function cmd_check_gripper( )
     -- read the status
-    gripper_status = ( sim.readCustomDataBlock( gripper_handle, "suction_pad_enabled" ) == "true" )
+    gripper_status = ( sim.readCustomDataBlock( 
+        gripper_handle, "suction_pad_enabled" ) == "true" )
 end
 --
 
@@ -309,7 +311,8 @@ end
 
 --- get the position of the gripper
 function cmd_get_ee_position( )
-    local data = sim.unpackTable( sim.readCustomDataBlock( crane_driver, "OS_crane_driver_shared" ) )
+    local data = sim.unpackTable( sim.readCustomDataBlock( 
+        crane_driver, "OS_crane_driver_shared" ) )
     return data.current_pose
 end
 --
@@ -333,25 +336,29 @@ function cmd_check_driver_status( )
         return "busy", msg, active
     else
         return "idle", msg, active
-    end
+    end 
 end
 --
 
 --- require infos from the sensor
 function cmd_check_slot_sensor( )
-    return sim.unpackTable( sim.readCustomDataBlock( sensor_slot_driver, "OS_slot_sensor_shared" ) )
+    return sim.unpackTable( sim.readCustomDataBlock( 
+        sensor_slot_driver, "OS_slot_sensor_shared" ) )
 end
 --
 
 --- find the pick point position depending on the settings
---    ARGS: true:pick point, false:place point
+--    ARGS: "pick_ready", "pick", "place_ready", "place"
 --    RETURNS: the point, or nil
-function cmd_find_point( flag )
+function cmd_find_point( cmd )
     local point = {}
     
-    if flag then
+    if cmd == "pick_ready" or cmd == "pick" then
+        -- print( "[cmd_find_point@OS_crane_service] cmd='" .. cmd .. "'" )
+        -- print( "[cmd_find_point@OS_crane_service] enable_slot_check='" .. tostring(service_enable_slot_check) .. "'" )
         -- find a pick point
-        if service_enable_slot_check then
+        if service_enable_slot_check==true then
+            -- print( "[cmd_find_point@OS_crane_service] reading slot sensors..." )
             -- get measurements from the slot sensors
             local sens = cmd_check_slot_sensor( )
             
@@ -365,13 +372,17 @@ function cmd_find_point( flag )
             point = sim.getObjectPosition( pick_point_h, -1 )
             
         else
+            -- print( "[cmd_find_point@OS_crane_service] using test points" )
             -- take one of the test points
-            point = sim.getObjectPosition( pos_test[ working_slot ], -1 )
+            point = sim.getObjectPosition( pos_test[working_slot], -1 )
+            -- print( "[cmd_find_point@OS_crane_service] point: " )
+            -- print( point )
             
         end
-    else
-        -- place point
-        -- IMPLEMENT THIS!
+        
+    else --> cmd == "place_ready" or cmd == "place"
+        point = sim.getObjectPosition( pos_place[working_slot], -1 )
+        
     end
     
     return point
@@ -421,7 +432,7 @@ function sm_pick_ready( )
             end
             
             -- compute the pick point
-            local pick_point = cmd_find_point( true )
+            local pick_point = cmd_find_point( "pick_ready" )
             if pick_point == nil then
                 -- error!
                 return  "ERR"
@@ -474,7 +485,7 @@ end
 --- command 'pick' as state machine
 function sm_pick( )
     local smach = smach_init( )
-    local has_init = true
+    local has_init = false
     
     pack = {
         pick_point = {},
@@ -487,23 +498,22 @@ function sm_pick( )
     smach.add_state( smach, "INIT",
         function( self, pack )
             -- the gripper must not have a payload
-            if gripper_payload then
+            if gripper_has_payload then
                 sm_error_description = "[OS_crane_service] command PICK state INIT -- ERROR: the gripper is busy now. Unable to perform the task. "
                 return "ERR"
             end
             
-            -- get measurements from the slot sensors
-            sens = cmd_check_slot_sensor( )
-            
-            -- the slot must be not free
-            if sens[working_slot].free then
-                sm_error_description = "[OS_crane_service] command PICK state INIT -- ERROR: nothing to grasp. "
+           -- store the poses in the shared data
+            pack.pick_point = cmd_find_point( "pick" )
+            if pack.pick_point == nil then
                 return "ERR"
             end
-            
-            -- store the poses in the shared data
-            pack.pick_point = sim.getObjectPosition( sens[working_slot].handle, -1 )
             pack.up_point = cmd_get_ee_position( )
+            pack.up_point[3] = pack.up_point[3] + 0.1
+            -- print( "[OS_crane_service, pick:INIT] pick point: " )
+            -- print( pack.pick_point )
+            -- print( "[OS_crane_service, pick:INIT] end effector pos: " )
+            -- print( pack.up_point )
             
             -- send the first request to the driver
             cmd_send_position( pack.pick_point )
@@ -512,6 +522,8 @@ function sm_pick( )
             cmd_gripper( true )
             
             pack.up_flag = true
+            -- print( "[OS_crane_service, pick:INIT] --> " .. "go_to_point" )
+            -- print( "[OS_crane_service, pick:go_to_point] down!" )
             return "go_to_point"
         end,
         true
@@ -522,9 +534,11 @@ function sm_pick( )
         function( self, pack )
             if cmd_check_driver_status( ) == "idle" then
                 -- end effector is idle
-                if pack.up_flag then
+                if pack.up_flag==true then
+                    -- print( "[OS_crane_service, pick:go_to_point] up!" )
+                    
                     -- idle in pick_point
-                    up_flag = false
+                    pack.up_flag = false
                     
                     -- send the request for the upwards path
                     cmd_send_position( pack.up_point )
@@ -539,6 +553,7 @@ function sm_pick( )
             else
                 -- end effector is busy
                 return "go_to_point"
+                
             end
         end, 
         false
@@ -569,19 +584,19 @@ end
 --- command 'place_ready' as state machine
 function sm_place_ready( )
     local smach = smach_init( )
-    local has_init = true
+    local has_init = false
     
     -- init state
     smach.add_state( smach, "INIT",
         function( self, pack )
             -- the gripper must have a payload
-            if not gripper_payload then
+            if not gripper_has_payload then
                 sm_error_description = "[OS_crane_service] command PLACE_READY state INIT -- ERROR: the gripper is carrying nothin. Cannot place. "
                 return "ERR"
             end
             
             -- find the place position
-            local place_pos = sim.getObjectPosition( pos_place[working_slot], -1 )
+            local place_pos = cmd_find_point( "place_ready" )
             place_pos[3] = place_pos[3] + 0.2
             
             -- send the request to the driver
@@ -599,8 +614,6 @@ function sm_place_ready( )
             if cmd_check_driver_status( ) == "busy" then
                 return "go_to_point"
             else
-                service_output.busy = false
-                service_output.success = true
                 return "END"
             end
         end, 
@@ -647,14 +660,14 @@ function sm_place( )
     smach.add_state( smach, "INIT",
         function( self, pack )
             -- the gripper must have a payload to release
-            if not gripper_payload then
+            if not gripper_has_payload then
                 sm_error_description = "[OS_crane_service] command PLACE state INIT -- ERROR: the gripper is carrying nothin. Cannot place. "
                 return "ERR"
             end
             
             -- find both the positions
+            pack.place_point = cmd_find_point( "place" )
             pack.up_point = cmd_get_ee_position( )
-            pack.place_point = sim.getObjectPosition( pos_place[working_slot] )
             
             -- send the first request to the driver
             cmd_send_position( pack.place_point )
@@ -673,6 +686,7 @@ function sm_place( )
                 if pack.up_flag then
                     -- the gripper can be turned off
                     --    it requires a dedicated state
+                    pack.clock_t = -1
                     return "gripper_off"
                     
                 else
@@ -709,7 +723,12 @@ function sm_place( )
                 cmd_send_position( pack.up_point )
                 pack.up_flag = false
                 
-                return "move_to_point"
+                return "go_to_point"
+                
+            else
+                -- keep going
+                return "gripper_off"
+                
             end
         end, 
         false
@@ -745,7 +764,7 @@ function sm_idle( )
     -- init state
     smach.add_state( smach, "INIT",
         function( self, pack )
-            print( "[OS_crane_service, idle:INIT]" )
+            -- print( "[OS_crane_service, idle:INIT]" )
             
             -- get the rest position
             local idle_point = sim.getObjectPosition( pos_idle[working_slot], -1 )
@@ -755,7 +774,7 @@ function sm_idle( )
             -- print( idle_point )
             cmd_send_position( idle_point )
             
-            print( "[OS_crane_service, idle:go_to_point]" )
+            -- print( "[OS_crane_service, idle:go_to_point]" )
             return "go_to_point"
         end,
         true
@@ -787,7 +806,7 @@ function sm_idle( )
     -- some error occurred
     smach.add_state( smach, "ERR",
         function( self, pack )
-            print( "[OS_crane_service, idle:ERR]" )
+            -- print( "[OS_crane_service, idle:ERR]" )
             -- an error occurred
             return "ERR"
         end, 
@@ -797,7 +816,7 @@ function sm_idle( )
     -- the machine ended successfully
     smach.add_state( smach, "END",
         function( self, pack )
-            print( "[OS_crane_service, idle:END]" )
+            -- print( "[OS_crane_service, idle:END]" )
             -- all done!
             return "END"
         end, 
@@ -827,13 +846,18 @@ function select_cmd( )
     
     -- AVAILABLE COMMANDS
     elseif c == "slot" then
+        print( "[select_cmd@OS_crane_service] gripper_has_payload=" 
+            .. tostring( gripper_has_payload ) )
         if val > 0 and val < 4 and not gripper_has_payload then
             working_slot = val
-            print( "[select_cmd@OS_crane_service]" 
+            print( "[select_cmd@OS_crane_service] " 
                 .. "SLOT: new slot is " .. working_slot )
+        elseif gripper_has_payload==true then
+            print( "[select_cmd@OS_crane_service] " 
+                .. "can't change slot while the gripper is carrying a payload" )
         else
-            print( "[select_cmd@OS_crane_service]" 
-            .. "ERROR: slot " .. val .. "doesn't exist." )
+            print( "[select_cmd@OS_crane_service] " 
+            .. "ERROR: slot " .. val .. " doesn't exist." )
         end
         sm = nil
         
@@ -979,7 +1003,7 @@ function sysCall_actuation()
         
         -- check the state of the machine
         --    consume the machine if the machine has ended its work
-        -- print( "[sysCall_actuation@OS_crane_service] second state: " .. cur_sm.state_name )
+        -- print( "[sysCall_actuation@OS_crane_service] res state: " .. cur_sm.state_name )
         if cur_sm.state_name == "ERR" then
             sm_set_idle_state( false )
             service_output.err_str = sm_error_description

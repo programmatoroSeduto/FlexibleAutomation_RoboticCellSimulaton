@@ -332,21 +332,23 @@ end
 function sysCall_init()
     enabled = false
     
-    -- handle to the service
-    crane_service = sim.getObjectHandle( "OS_crane_service" )
-    
-    -- state machine 
-    state_machine_setup( )
-    pose_idx = 1
-    
-    -- frame count and others
-    frame_count = 0
-    frame_prev = -1
-    frame_flag = false
-    
-    -- error handling
-    err_state = ""
-    err_last_msg = {}
+    if enabled then
+        -- handle to the service
+        crane_service = sim.getObjectHandle( "OS_crane_service" )
+        
+        -- state machine 
+        state_machine_setup( )
+        pose_idx = 1
+        
+        -- frame count and others
+        frame_count = 0
+        frame_prev = -1
+        frame_flag = false
+        
+        -- error handling
+        err_state = ""
+        err_last_msg = {}
+    end
 end
 --
 

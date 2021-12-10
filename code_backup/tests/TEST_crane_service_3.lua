@@ -1,14 +1,6 @@
 --[[
-    TEST_crane_service_2
-        the test wants to try out the command 'pick_ready'
-    
-    HOW THIS TEST WORKS
-    Before starting, turn off the checking on the slots. 
-    1. select cyclically the slot (see first test) and send the "slot" command
-    2. send the command "pick_ready" to the service
-    3. then, wait
-    4. return to the idle position, then change slot
-    This test is the starting point for the next test on "pick_ready" and "pick"
+    TEST_crane_service_3
+        test the entire sequence of commands
 --]]
 
 --- empty state machine
@@ -178,31 +170,35 @@ end
 function state_setup( smach, pack )
 	sm_frame_update( pack, smach )
 	
-    -- compute the next idx
-	next_idx( )
-    sm_print( pack, "sending the 'slot' command (slot:" .. pose_idx .. ")" )
-    send_command_to_service( "slot", pose_idx )
+    if next_cmd( pack ) then
+        -- next working slot
+        next_idx( )
+        sm_print( pack, "sending the 'slot' command (slot:" .. pose_idx .. ")" )
+        send_command_to_service( "slot", pose_idx )
+        
+    end
+    sm_print( pack, "current command: " .. pack.cmd[pack.cmd_idx] )
     
-    sm_print( pack, "--> " .. "send_pick_ready" )
-    return "send_pick_ready"
+    sm_print( pack, "--> " .. "send_cmd" )
+    return "send_cmd"
 end
 --
 
---- send the command pick_ready
-function state_send_pick_ready( smach, pack )
+--- send the command
+function state_send( smach, pack )
 	sm_frame_update( pack, smach )
 	
-	sm_print( pack, "sending command 'pick_ready'" )
-    send_command_to_service( "pick_ready" )
+	sm_print( pack, "sending command '" .. pack.cmd[pack.cmd_idx] .. "'" )
+    send_command_to_service( pack.cmd[pack.cmd_idx] )
     sm_print( pack, "waiting the next frame..." )
     
-    sm_print( pack, "--> " .. "check_pick_ready" )
-    return "check_pick_ready"
+    sm_print( pack, "--> " .. "check_cmd" )
+    return "check_cmd"
 end
 --
 
---- check the init state of pick_ready
-function state_check_pick_ready( smach, pack )
+--- check the busy flag
+function state_check( smach, pack )
     sm_frame_update( pack, smach )
     sm_print( pack, "waiting the next frame...OK" )
     
@@ -212,14 +208,14 @@ function state_check_pick_ready( smach, pack )
     -- the busy flag must be true
     if msg.busy then
         -- allright
-        sm_print( pack, "--> " .. "run_pick_ready" )
-        return "run_pick_ready"
+        sm_print( pack, "--> " .. "run_cmd" )
+        return "run_cmd"
         
     else
         -- unexpected state!
         sm_print( pack, "UNEXPECTED: msg.busy=" .. tostring(msg.busy) .. " (expected: true)" )
         
-        pack.err_state = "check_pick_ready"
+        pack.err_state = "check_cmd"
         pack.err_last_data = msg
         err_report = true
         
@@ -229,7 +225,7 @@ end
 --
 
 --- wait until the service is not busy
-function state_run_pick_ready( smach, pack )
+function state_run( smach, pack )
     sm_frame_update( pack, smach )
     
     -- check the status
@@ -237,11 +233,11 @@ function state_run_pick_ready( smach, pack )
     
     if msg.busy then
         -- keep waiting
-        return "run_pick_ready"
+        return "run_cmd"
         
     else
         -- end of the waiting - all done!
-        sm_print( pack, "pick ready complete! last message: ", msg )
+        sm_print( pack, "command '" .. pack.cmd[pack.cmd_idx] .. "' complete! last message: ", msg )
         
         sm_print( pack, "--> " .. "END" )
         return "END"
@@ -270,6 +266,10 @@ end
 --- END state
 function state_end( smach, pack )
     sm_frame_update( pack, smach )
+    
+    if pause_sim then
+        sim.pauseSimulation( )
+    end
     
     return "SETUP"
 end
@@ -355,14 +355,16 @@ function sm_machine_setup( )
     local sm = smach_init( )
 	
 	-- set the shared data
-	local pack = sm_get_pack( "TEST_crane_service_2" )
+	local pack = sm_get_pack( "TEST_crane_service_3" )
+    pack.cmd = { "idle", "pick_ready", "pick", "place_ready", "place", "idle" }
+    pack.cmd_idx = 0
 	sm.set_shared( sm, pack )
     
 	-- states
     sm.add_state( sm, "SETUP", state_setup, true )
-    sm.add_state( sm, "send_pick_ready", state_send_pick_ready, false )
-    sm.add_state( sm, "check_pick_ready", state_check_pick_ready, false )
-    sm.add_state( sm, "run_pick_ready", state_run_pick_ready, false )
+    sm.add_state( sm, "send_cmd", state_send, false )
+    sm.add_state( sm, "check_cmd", state_check, false )
+    sm.add_state( sm, "run_cmd", state_run, false )
     sm.add_state( sm, "END",  state_end, false )
     sm.add_state( sm, "ERROR", state_handle_err, false )
 	
@@ -370,7 +372,7 @@ function sm_machine_setup( )
 end
 --
 
---- change idx
+--- change working slot
 function next_idx( )
     -- next idx
     pose_idx = pose_idx + 1
@@ -380,9 +382,24 @@ function next_idx( )
 end
 --
 
+--- change command
+--    RETURNS true: end of the command list
+function next_cmd( pack )
+    pack.cmd_idx = pack.cmd_idx + 1
+    
+    if pack.cmd_idx > #pack.cmd then
+        pack.cmd_idx = 1
+        return true
+    end
+    
+    return false
+end
+--
+
 ---
 function sysCall_init()
-    enabled = false
+    enabled = true
+    pause_sim = false
     
     if enabled then
         -- handle to the service
@@ -392,7 +409,7 @@ function sysCall_init()
         sm = sm_machine_setup( )
         
         -- operation control
-        pose_idx = 1
+        pose_idx = 2
         
         -- disable slot checking
         sim.writeCustomDataBlock( crane_service, 

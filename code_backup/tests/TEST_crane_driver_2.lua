@@ -241,23 +241,24 @@ end
 ---
 function sysCall_init()
     enabled = false
-    
-    -- the driver
-    driver = sim.getObjectHandle( "OS_crane_driver" )
-    
-    -- points
-    poses = {
-        sim.getObjectPosition( sim.getObjectHandle( "OS_poses_idle_" .. 1 ), -1 ),
-        sim.getObjectPosition( sim.getObjectHandle( "OS_poses_idle_" .. 2 ), -1 ),
-        sim.getObjectPosition( sim.getObjectHandle( "OS_poses_idle_" .. 3 ), -1 )
-    }
-    pose_idx = 2
-    
-    -- frame counter
-    frame_count = 0
-    
-    -- state machine
-    test_sm_setup( )
+    if enabled then
+        -- the driver
+        driver = sim.getObjectHandle( "OS_crane_driver" )
+        
+        -- points
+        poses = {
+            sim.getObjectPosition( sim.getObjectHandle( "OS_poses_idle_" .. 1 ), -1 ),
+            sim.getObjectPosition( sim.getObjectHandle( "OS_poses_idle_" .. 2 ), -1 ),
+            sim.getObjectPosition( sim.getObjectHandle( "OS_poses_idle_" .. 3 ), -1 )
+        }
+        pose_idx = 2
+        
+        -- frame counter
+        frame_count = 0
+        
+        -- state machine
+        test_sm_setup( )
+    end
 end
 --
 
