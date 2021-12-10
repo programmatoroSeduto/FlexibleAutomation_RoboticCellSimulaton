@@ -230,12 +230,15 @@ function service_setup( )
     -- input infos
     sim.writeCustomDataBlock( self,
         "OS_crane_service_shared_input", sim.packTable( service_empty_input ) )
+    sim.writeCustomDataBlock( self,
+        "OS_crane_service_shared_enable_slot_check", "true" )
     
     -- output infos
     sim.writeCustomDataBlock( self,
         "OS_crane_service_shared_output", sim.packTable( service_empty_output ) )
     
     service_input = service_empty_input
+    service_enable_slot_check = true
     service_output = service_empty_output
 end
 --
@@ -243,10 +246,12 @@ end
 --- get the command from another script, if any
 function service_update_input( )
     -- read the input
-    service_input = sim.unpackTable( 
-        sim.readCustomDataBlock( self, "OS_crane_service_shared_input" ) )
+    service_input = sim.unpackTable( sim.readCustomDataBlock( self, 
+        "OS_crane_service_shared_input" ) )
+    service_enable_slot_check = ( sim.readCustomDataBlock( self,
+        "OS_crane_service_shared_enable_slot_check" ) == "true" )
     
-    -- clear the previous input!
+    -- clear the cmd input!
     sim.writeCustomDataBlock( self,
         "OS_crane_service_shared_input", sim.packTable( service_empty_input ) )
 end
@@ -338,6 +343,41 @@ function cmd_check_slot_sensor( )
 end
 --
 
+--- find the pick point position depending on the settings
+--    ARGS: true:pick point, false:place point
+--    RETURNS: the point, or nil
+function cmd_find_point( flag )
+    local point = {}
+    
+    if flag then
+        -- find a pick point
+        if service_enable_slot_check then
+            -- get measurements from the slot sensors
+            local sens = cmd_check_slot_sensor( )
+            
+            -- the slot must be not free
+            if sens[working_slot].free then
+                return nil
+            end
+            
+            -- find the position of the pick point
+            local pick_point_h = sens[working_slot].handle
+            point = sim.getObjectPosition( pick_point_h, -1 )
+            
+        else
+            -- take one of the test points
+            point = sim.getObjectPosition( pos_test[ working_slot ], -1 )
+            
+        end
+    else
+        -- place point
+        -- IMPLEMENT THIS!
+    end
+    
+    return point
+end
+--
+
 
 
 
@@ -364,7 +404,12 @@ end
 --- command 'pick_ready' as state machine
 function sm_pick_ready( )
     local smach = smach_init( )
-    local has_init = true
+    local has_init = false
+    
+    local pack = {
+        up_space = 0.1 
+    }
+    smach.set_shared( smach, pack )
     
     -- before starting
     smach.add_state( smach, "INIT",
@@ -375,19 +420,13 @@ function sm_pick_ready( )
                 return "ERR"
             end
             
-            -- get measurements from the slot sensors
-            local sens = cmd_check_slot_sensor( )
-            
-            -- the slot must be not free
-            if sens[working_slot].free then
-                sm_error_description = "[OS_crane_service] command PICK_READY state INIT -- ERROR: the working slot " .. working_slot .. " is free, nothing to grasp. "
-                return "ERR"
+            -- compute the pick point
+            local pick_point = cmd_find_point( true )
+            if pick_point == nil then
+                -- error!
+                return  "ERR"
             end
-            
-            -- find the position of the pick point
-            local pick_point_h = sens[working_slot].handle
-            local pick_point = sim.getObjectPosition( pick_point_h, -1 )
-            pick_point[3] = pick_point[3] + 0.2
+            pick_point[3] = pick_point[3] + pack.up_space
             
             -- send the request to the driver
             cmd_send_position( pick_point )
@@ -865,6 +904,13 @@ function task_sys_setup( )
         sim.getObjectHandle( "OS_oiltray_place_point" ),
         sim.getObjectHandle( "OS_fuelpump_place_point" ),
         sim.getObjectHandle( "OS_camshaft_place_point" ),
+    }
+    
+    -- use them when the slot checking is not enabled
+    pos_test = {
+        sim.getObjectHandle( "slot_1_center" ),
+        sim.getObjectHandle( "slot_2_center" ),
+        sim.getObjectHandle( "slot_3_center" )
     }
     
 end

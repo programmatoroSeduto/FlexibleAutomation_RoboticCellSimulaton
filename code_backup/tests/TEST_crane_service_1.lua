@@ -330,7 +330,7 @@ end
 
 --- setup the test
 function sysCall_init()
-    enabled = true
+    enabled = false
     
     -- handle to the service
     crane_service = sim.getObjectHandle( "OS_crane_service" )

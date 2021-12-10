@@ -240,7 +240,7 @@ end
 
 ---
 function sysCall_init()
-    enabled = true
+    enabled = false
     
     -- the driver
     driver = sim.getObjectHandle( "OS_crane_driver" )
