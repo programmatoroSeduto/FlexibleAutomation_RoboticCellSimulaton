@@ -67,9 +67,6 @@ distance_between( handleA, handleB ) -- planar distacce (only {x,y}) between two
 
 
 
-
-
-
 ```lua
 
 ```
