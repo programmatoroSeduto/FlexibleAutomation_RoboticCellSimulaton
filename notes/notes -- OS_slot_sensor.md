@@ -12,12 +12,17 @@ slot_sensor = sim.getObjectHandle( "OS_slot_sensors" )
 
 -- DATA STRUCTURE : READ-ONLY DATA
 -- structure of the shared output message
+-- free : if the sensor area is free or not
+-- dist : the planar distance between center and pick point
+-- vdist: the planar distance vector wrt the world frame
+--    'y' (no.2) lies on the direction of the carousel
+-- handle : handle of the pick point
+-- from_handle : the handle of the center of the sensor
 shared_data = {
-        { free=true, dist=-1, handle=nil }, -- slot 1
-        { free=true, dist=-1, handle=nil }, -- slot 2
-        { free=true, dist=-1, handle=nil }  -- slot 3
-    }
--- free : if the space of the sensor is free
+	{ free=true, dist=-1, vdist={}, handle=nil, from_handle=slot_sensor[1].handle }, -- slot 1
+	{ free=true, dist=-1, vdist={}, handle=nil, from_handle=slot_sensor[2].handle }, -- slot 2
+	{ free=true, dist=-1, vdist={}, handle=nil, from_handle=slot_sensor[3].handle }  -- slot 3
+}
 -- dist : -1 if the sensor is free; distance between the pick point and the center of the sensor
 -- handle : coppeliasim handle of the pick point
 
