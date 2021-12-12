@@ -16,6 +16,5 @@ optic_sensor = sim.getObjectHandle( "OS_optic_sensor_slot" )
 }
 
 -- retrieve the data from the sensor
-data = sim.unpackTable( 
-	sim.readCustomDataBlock( optic_sensor, "OS_optic_sensor_slot_shared" ) )
+data = sim.unpackTable( sim.readCustomDataBlock( optic_sensor, "OS_optic_sensor_slot_shared" ) )
 ```

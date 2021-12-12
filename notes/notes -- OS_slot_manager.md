@@ -14,8 +14,8 @@ slot_manager = sim.getObjectHandle( "OS_slot_manager" )
 
 -- DATA STRUCTURE : suggestion
 msg = {
-	slot= , --> the suggested slot
-	pick_point_handle= --> the pick point of the object (deprecated)
+	slot=-1, --> the suggested slot
+	pick_point_handle=-1 --> the pick point of the object (deprecated)
 }
 -- empty message : (-1, -1)
 

@@ -4,7 +4,7 @@
 
 **INPUT**. It has not a input. 
 
-**OUTPUT**. See the structure here: The structure is updates every time the `sysCall_sensing()`. The sensor simply outputs the actua state of each slot. 
+**OUTPUT**. See the structure here: The structure is updates every time the `sysCall_sensing()` is called. The sensor simply outputs the actua state of each slot. 
 
 ```lua
 -- HANDLER
