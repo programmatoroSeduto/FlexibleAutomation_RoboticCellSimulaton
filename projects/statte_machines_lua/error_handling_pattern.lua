@@ -40,9 +40,8 @@
 --
 
 --- frame update
-function sm_frame_update( pack, state, funct )
+function sm_frame_update( pack, smach, funct )
     local funct = fnct or ""
-	local state = state or ""
 	
 	-- frame count
 	pack.frame_count = pack.frame_count + 1
@@ -51,7 +50,7 @@ function sm_frame_update( pack, state, funct )
 	pack.funct_name = funct
 	
 	-- state name (nil is allowed)
-	pack.state_name = state
+	pack.state_name = smach.state_name
 end
 --
 
@@ -63,7 +62,7 @@ function sm_print( pack, msg, data )
     local prefix = "["
 	
 	-- function name
-	if not(pack.funct == "") then
+	if not(pack.funct_name == "") then
 		prefix = prefix .. pack.funct_name .. "@"
 	end
 	
@@ -75,7 +74,7 @@ function sm_print( pack, msg, data )
 	
 	-- state string
 	if not(pack.state == "") then
-		prefix = prefix .. ", " .. pack.state
+		prefix = prefix .. ", " .. pack.state_name
 	end
 	
 	-- end of the header
@@ -120,12 +119,14 @@ function sm_machine_setup( )
     local sm = smach_init( )
 	
 	-- set the shared data
-	local pack = sm_get_pack( ) --> TODO: set the name of the script
+	local pack = sm_get_pack( "TODO" ) --> TODO: set the name of the script
+	-- other infos in pack?
 	sm.set_shared( sm, pack )
     
 	-- states
     sm.add_state( sm, "SETUP", state_setup, true )
-    -- sm.add_state( sm, "",  funct,   false )
+    -- sm.add_state( sm, "",  state_,   false )
+	sm.add_state( sm, "END", state_end, false )
     sm.add_state( sm, "ERROR", state_handle_err, false )
     sm.add_state( sm, "WARNING", state_handle_warn, false )
 	
@@ -140,17 +141,28 @@ end
 --- STATE PATTERNS
 --
 
+--- END state
+function state_end( smach, pack )
+    sm_frame_update( pack, smach )
+    
+    return "END"
+end
+--
+
 --- typical implementation
 function state_proto( smach, pack )
-	frame_update( )
+	sm_frame_update( pack, smach )
 	
 	--- ... implementation of the state
+	
+	sm_print( pack, "--> " .. "next" )
+	return "next"
 end
 --
 
 --- double-state pattern
 function state_double( smach, pack )
-	frame_update( )
+	sm_frame_update( pack, smach )
 	
 	if not pack.flag then
 		-- first iteration
@@ -180,6 +192,8 @@ end
 
 --- typical "ERROR" implementation
 function state_handle_err( smach, pack )
+	sm_frame_update( pack, smach )
+	
 	-- error report (only once)
 	if pack.err_report then
 		pack.err_report = false
@@ -198,7 +212,9 @@ end
 --    resume the execution from another state
 --    pack.err_report is set by another state as well as pack.err_warn_pause
 function state_handle_warn( self, pack )
-    -- error report
+	sm_frame_update( pack, smach )
+    
+	-- error report
 	if pack.err_report then
 		cprint( "state_handle_err", "WARNING on state '" .. pack.err_state .. "'" )
 		cprint( "state_handle_err", "last service message: ", pack.err_last_msg )
